@@ -233,7 +233,24 @@ Remember that backslashes inside JSON strings must be doubled. For example:
 "C:\\Users\\alex\\.opencode\\OpenCodeNotify.ps1"
 ```
 
+The repository's recommended daily-use settings are:
+
+```json
+"suppressWhenFocused": false,
+"minDuration": 10
+```
+
+`minDuration: 10` is validated to suppress short `complete` events while still allowing high-value `permission` notifications. `suppressWhenFocused` remains `false` because focus detection was not effective for OpenCode running in WSL under Windows Terminal.
+
 ## 8. Restart OpenCode and smoke test
+
+For an initial smoke test, temporarily set:
+
+```json
+"minDuration": 0
+```
+
+so a trivial completion is guaranteed to be eligible for notification.
 
 Start OpenCode from a test directory and send:
 
@@ -241,16 +258,13 @@ Start OpenCode from a test directory and send:
 Reply only with: notification test completed
 ```
 
-The validated baseline uses:
+If the toast appears and remains in Notification Center, restore:
 
 ```json
-"suppressWhenFocused": false,
-"minDuration": 0
+"minDuration": 10
 ```
 
-so the notification is not hidden during initial testing.
-
-If the toast appears and remains in Notification Center, continue with [`validation.md`](validation.md).
+and continue with [`validation.md`](validation.md).
 
 ## 9. Project name in the toast
 
