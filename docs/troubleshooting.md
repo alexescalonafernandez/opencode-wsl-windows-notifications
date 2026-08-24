@@ -189,7 +189,7 @@ Task completed
 
 These are different events, not duplicates.
 
-If this becomes noisy in real workflows, tune `subagent_complete`, focus suppression, and/or minimum duration after the basic setup has been validated.
+If this becomes noisy in real workflows, tune `subagent_complete` and/or minimum duration after the basic setup has been validated.
 
 ## 11. No permission toast appears
 
@@ -218,3 +218,46 @@ This was observed during validation and is expected for the tested path.
 Finishing a Plan response or manually pressing `Tab` to switch agents did not produce `plan_exit`. Treat it as a specific tool event rather than a generic "left Plan mode" signal.
 
 If the normal workflow never invokes that tool, the event can remain optional.
+
+## 14. `suppressWhenFocused: true` still shows toasts in WSL + Windows Terminal
+
+This was reproduced on the validated workstation.
+
+Configuration:
+
+```json
+"suppressWhenFocused": true,
+"minDuration": 0
+```
+
+Observed behavior: a `complete` toast still appeared while the OpenCode tab in Windows Terminal remained focused.
+
+### Root cause
+
+The notifier runs inside WSL and therefore sees itself as a Linux process. Its focus detector chooses the Linux path rather than the native Windows `GetForegroundWindow()` path.
+
+In a normal WSL session hosted by Windows Terminal there is no corresponding Linux X11/Wayland window ID for that host window. The plugin intentionally uses a fail-open policy: if it cannot prove the terminal is focused, it returns "not focused" so it does not accidentally suppress an important notification.
+
+Consequently, `suppressWhenFocused` should not be relied on for this WSL + Windows Terminal bridge.
+
+The repository baseline intentionally keeps:
+
+```json
+"suppressWhenFocused": false
+```
+
+This is explicit rather than pretending that focus-aware suppression is available.
+
+Upstream references:
+
+- https://github.com/mohak34/opencode-notifier/blob/main/src/focus.ts
+- https://github.com/mohak34/opencode-notifier/issues/81
+- https://github.com/mohak34/opencode-notifier/pull/92
+
+There is later native-Windows focus-detection work upstream, but WSL remains a Linux process from the plugin's point of view, so native Windows fixes do not automatically solve this path.
+
+### Possible future enhancement
+
+Focus filtering could be moved into `OpenCodeNotify.ps1`, because that script runs through Windows PowerShell and can query the Windows foreground window.
+
+However, a simple implementation would only know that **Windows Terminal** is foreground. It would not reliably distinguish the OpenCode tab from another tab in the same Windows Terminal window. Such filtering can therefore suppress useful notifications when another terminal tab is active and should be opt-in until a tab-aware approach is validated.
