@@ -1,0 +1,88 @@
+{
+  "sound": false,
+  "notification": false,
+  "bell": false,
+  "suppressWhenFocused": false,
+  "showProjectName": true,
+  "showSessionTitle": true,
+  "showFullPath": false,
+  "minDuration": 0,
+  "command": {
+    "enabled": true,
+    "path": "powershell.exe",
+    "args": [
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      "C:\\Users\\YOUR_WINDOWS_USER\\.opencode\\OpenCodeNotify.ps1",
+      "{event}",
+      "{message}",
+      "{projectName}",
+      "{sessionTitle}",
+      "{agentName}"
+    ]
+  },
+  "events": {
+    "permission": {
+      "sound": false,
+      "notification": false,
+      "command": true,
+      "bell": false
+    },
+    "question": {
+      "sound": false,
+      "notification": false,
+      "command": true,
+      "bell": false
+    },
+    "complete": {
+      "sound": false,
+      "notification": false,
+      "command": true,
+      "bell": false
+    },
+    "subagent_complete": {
+      "sound": false,
+      "notification": false,
+      "command": true,
+      "bell": false
+    },
+    "error": {
+      "sound": false,
+      "notification": false,
+      "command": true,
+      "bell": false
+    },
+    "plan_exit": {
+      "sound": false,
+      "notification": false,
+      "command": true,
+      "bell": false
+    },
+    "user_cancelled": {
+      "sound": false,
+      "notification": false,
+      "command": false,
+      "bell": false
+    },
+    "session_started": {
+      "sound": false,
+      "notification": false,
+      "command": false,
+      "bell": false
+    },
+    "user_message": {
+      "sound": false,
+      "notification": false,
+      "command": false,
+      "bell": false
+    },
+    "client_connected": {
+      "sound": false,
+      "notification": false,
+      "command": false,
+      "bell": false
+    }
+  }
+}
