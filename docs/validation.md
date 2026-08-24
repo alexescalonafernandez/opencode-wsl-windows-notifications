@@ -11,7 +11,7 @@ During event validation, keep:
 "minDuration": 0
 ```
 
-This avoids hiding notifications while testing and reflects the validated WSL baseline. Focus suppression was tested separately and is documented below.
+This avoids hiding notifications while testing individual event transport. Focus suppression and minimum-duration tuning were tested separately and are documented below.
 
 Before each scenario, clear Windows Notification Center so the number of resulting notifications is unambiguous.
 
@@ -26,7 +26,7 @@ Before each scenario, clear Windows Notification Center so the number of resulti
 | `error` | 🟡 Configured | Not intentionally forced; expected to use the same custom-command transport |
 | `plan_exit` | 🟡 Configured | Specific tool event; not intentionally forced |
 | `suppressWhenFocused` | ❌ Not effective in tested WSL + Windows Terminal setup | Toast still appeared while the OpenCode tab was focused |
-| `minDuration` | ⬜ Pending | To be tuned after focus behavior was characterized |
+| `minDuration = 10` | ✅ Validated for `complete` | Short completion was suppressed; long completion notified; permission still notified immediately |
 
 ## 1. Main task completion
 
@@ -220,14 +220,57 @@ A future enhancement could implement Windows-side focus suppression in `OpenCode
 
 ## 8. Minimum duration
 
-Not yet part of the validated baseline.
+Tested configuration:
 
-Next tuning step: test a non-zero value such as:
+```json
+"suppressWhenFocused": false,
+"minDuration": 10
+```
+
+### M1 - short main task
+
+Prompt:
+
+```text
+Reply only with: short duration test completed
+```
+
+Observed duration: approximately 2.2 seconds.
+
+Observed result: **no toast**.
+
+This confirms that the 10-second threshold suppresses trivial `complete` notifications.
+
+### M2 - task longer than 10 seconds with a permission gate
+
+Prompt:
+
+```text
+Run this exact shell command:
+
+sleep 12
+
+Then reply only with: long duration test completed
+```
+
+The temporary project configuration still required Bash permission approval.
+
+Observed behavior:
+
+1. `Permission required` toast appeared immediately while OpenCode was waiting for approval.
+2. After `Allow once`, the task executed `sleep 12` and the total response lasted more than 10 seconds.
+3. A separate `Task completed` toast appeared when the long-running main task finished.
+
+This is the desired behavior: `minDuration` reduces noise from short completion events without suppressing the high-value `permission` event.
+
+### Baseline decision
+
+Use:
 
 ```json
 "minDuration": 10
 ```
 
-The top-level threshold applies to short `complete` and `subagent_complete` events and, according to the plugin implementation, returns before the custom command is fired for those completion events.
+as the repository's recommended daily-use threshold.
 
-Permission and question events are high-value attention signals and should not be filtered by this completion-duration tuning.
+The main `complete` threshold is now validated. A dedicated short/long `subagent_complete` duration test may still be run if strict subagent-specific evidence is desired, although the plugin applies the same top-level threshold to completion events.
