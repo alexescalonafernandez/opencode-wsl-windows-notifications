@@ -240,7 +240,9 @@ The repository's recommended daily-use settings are:
 "minDuration": 10
 ```
 
-`minDuration: 10` is validated to suppress short `complete` events while still allowing high-value `permission` notifications. `suppressWhenFocused` remains `false` because focus detection was not effective for OpenCode running in WSL under Windows Terminal.
+`minDuration: 10` has been validated for both the main `complete` event and `subagent_complete`. The threshold is evaluated per session, so a short subagent can be filtered while a longer parent session still notifies. High-value events such as `permission` are not delayed by this completion-duration filter.
+
+`suppressWhenFocused` remains `false` because focus detection was not effective for OpenCode running in WSL under Windows Terminal.
 
 ## 8. Restart OpenCode and smoke test
 
