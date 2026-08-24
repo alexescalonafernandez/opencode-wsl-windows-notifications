@@ -6,7 +6,7 @@
   "showProjectName": true,
   "showSessionTitle": true,
   "showFullPath": false,
-  "minDuration": 0,
+  "minDuration": 10,
   "command": {
     "enabled": true,
     "path": "powershell.exe",
