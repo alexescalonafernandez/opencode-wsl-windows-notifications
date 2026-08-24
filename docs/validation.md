@@ -4,20 +4,20 @@ This document records the controlled tests used to validate the notification bri
 
 ## Baseline test settings
 
-During validation, keep:
+During event validation, keep:
 
 ```json
 "suppressWhenFocused": false,
 "minDuration": 0
 ```
 
-This avoids hiding notifications while testing.
+This avoids hiding notifications while testing and reflects the validated WSL baseline. Focus suppression was tested separately and is documented below.
 
 Before each scenario, clear Windows Notification Center so the number of resulting notifications is unambiguous.
 
 ## Validation matrix
 
-| Event | Status | Expected behavior |
+| Event / behavior | Status | Expected behavior |
 | --- | --- | --- |
 | `complete` | ✅ Validated | One toast after the main OpenCode session finishes |
 | `permission` | ✅ Validated | One toast while OpenCode is blocked waiting for approval |
@@ -25,6 +25,8 @@ Before each scenario, clear Windows Notification Center so the number of resulti
 | `subagent_complete` | ✅ Validated | One toast when the subagent finishes; main completion may produce a separate `complete` toast |
 | `error` | 🟡 Configured | Not intentionally forced; expected to use the same custom-command transport |
 | `plan_exit` | 🟡 Configured | Specific tool event; not intentionally forced |
+| `suppressWhenFocused` | ❌ Not effective in tested WSL + Windows Terminal setup | Toast still appeared while the OpenCode tab was focused |
+| `minDuration` | ⬜ Pending | To be tuned after focus behavior was characterized |
 
 ## 1. Main task completion
 
@@ -169,31 +171,63 @@ Recommended policy: treat it as optional and validate only if the normal workflo
 
 ## 7. Focus suppression
 
-Not yet part of the validated baseline.
-
-After the core events work, test:
+Tested configuration:
 
 ```json
-"suppressWhenFocused": true
+"suppressWhenFocused": true,
+"minDuration": 0
 ```
 
-Desired behavior:
+Controlled prompt:
 
-- OpenCode terminal focused -> no completion toast
-- another Windows application focused -> toast appears
+```text
+Reply only with: focused test completed
+```
 
-Because the final notification transport is a custom PowerShell command rather than the plugin's native backend, verify this behavior empirically on the target workstation before relying on it.
+The OpenCode tab remained focused inside Windows Terminal for the entire response.
+
+### Observed result
+
+A `Task completed` toast still appeared.
+
+Therefore `suppressWhenFocused` is **not effective in the validated WSL2 + Windows Terminal environment**.
+
+### Why
+
+OpenCode is running inside WSL, so the notifier process sees a Linux platform rather than a native Windows process. The plugin's focus detector therefore follows its Linux focus-detection path. A normal WSL shell hosted by Windows Terminal does not expose a Linux X11/Wayland window ID for the host Windows Terminal window. The focus detector is intentionally fail-open, so when it cannot prove the terminal is focused it returns "not focused" and the notification is allowed.
+
+This is separate from the plugin's native Windows focus-detection path (`GetForegroundWindow()`), because that path is selected only when the notifier itself runs as a native Windows process.
+
+Upstream references:
+
+- focus implementation: https://github.com/mohak34/opencode-notifier/blob/main/src/focus.ts
+- Windows focus issue reported against 0.2.8-era behavior: https://github.com/mohak34/opencode-notifier/issues/81
+- later Windows focus fix work: https://github.com/mohak34/opencode-notifier/pull/92
+
+The Windows fix does not automatically make WSL use the native Windows branch; WSL remains a Linux process from Node/Bun's point of view.
+
+### Baseline decision
+
+Keep:
+
+```json
+"suppressWhenFocused": false
+```
+
+in the repository's WSL baseline so the configuration does not imply a focus-aware behavior that was not observed.
+
+A future enhancement could implement Windows-side focus suppression in `OpenCodeNotify.ps1`, but a simple implementation would only know that **Windows Terminal** is foreground, not necessarily whether the specific OpenCode tab is the active tab. That trade-off should be tested before becoming a default.
 
 ## 8. Minimum duration
 
 Not yet part of the validated baseline.
 
-After validation, consider increasing:
+Next tuning step: test a non-zero value such as:
 
 ```json
-"minDuration": 0
+"minDuration": 10
 ```
 
-to a value such as `10` or `15` seconds to reduce noise from short `complete` and `subagent_complete` events.
+The top-level threshold applies to short `complete` and `subagent_complete` events and, according to the plugin implementation, returns before the custom command is fired for those completion events.
 
-Permission and question events are high-value attention signals and should not be accidentally filtered during tuning.
+Permission and question events are high-value attention signals and should not be filtered by this completion-duration tuning.
