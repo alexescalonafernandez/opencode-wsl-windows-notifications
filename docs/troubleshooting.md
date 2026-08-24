@@ -173,9 +173,9 @@ With:
 
 Starting OpenCode from a home directory may therefore show the home-directory name. Start OpenCode from the actual repository/project directory for a more useful notification title.
 
-## 10. Two notifications appear after a delegated task
+## 10. Delegated task produces one or two completion notifications
 
-If a subagent finishes and then the main session finishes, two notifications are expected:
+Without duration filtering, if a subagent finishes and then the main session finishes, two notifications are expected:
 
 ```text
 Subagent completed
@@ -189,7 +189,27 @@ Task completed
 
 These are different events, not duplicates.
 
-If this becomes noisy in real workflows, tune `subagent_complete` and/or minimum duration after the basic setup has been validated.
+With the recommended:
+
+```json
+"minDuration": 10
+```
+
+that count can legitimately become zero, one, or two because the threshold is evaluated independently for the subagent session and the main session.
+
+A validated example:
+
+```text
+subagent ~6 s < 10 s
+  -> no Subagent completed toast
+
+main session ~19.1 s > 10 s
+  -> Task completed toast
+```
+
+With `minDuration: 60`, the same type of delegated task produced no toast because both sessions completed below the threshold.
+
+Therefore, receiving only `Task completed` after a delegated task is not evidence that `subagent_complete` failed; first compare the subagent duration with `minDuration`.
 
 ## 11. No permission toast appears
 
