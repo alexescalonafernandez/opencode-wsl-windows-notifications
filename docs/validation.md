@@ -26,7 +26,7 @@ Before each scenario, clear Windows Notification Center so the number of resulti
 | `error` | 🟡 Configured | Not intentionally forced; expected to use the same custom-command transport |
 | `plan_exit` | 🟡 Configured | Specific tool event; not intentionally forced |
 | `suppressWhenFocused` | ❌ Not effective in tested WSL + Windows Terminal setup | Toast still appeared while the OpenCode tab was focused |
-| `minDuration = 10` | ✅ Validated for `complete` | Short completion was suppressed; long completion notified; permission still notified immediately |
+| `minDuration = 10` | ✅ Validated | Filters short `complete` and `subagent_complete` sessions while preserving longer completions and immediate permission notifications |
 
 ## 1. Main task completion
 
@@ -129,7 +129,7 @@ Delegate this task to a subagent:
 inspect the current directory and summarize the visible project structure in 3 bullet points.
 ```
 
-Expected behavior:
+Expected behavior without duration filtering:
 
 1. OpenCode launches a subagent.
 2. When the subagent finishes, a `Subagent completed` toast appears.
@@ -220,7 +220,7 @@ A future enhancement could implement Windows-side focus suppression in `OpenCode
 
 ## 8. Minimum duration
 
-Tested configuration:
+Recommended daily-use configuration:
 
 ```json
 "suppressWhenFocused": false,
@@ -263,6 +263,44 @@ Observed behavior:
 
 This is the desired behavior: `minDuration` reduces noise from short completion events without suppressing the high-value `permission` event.
 
+### M3 - delegated task / per-session threshold
+
+Prompt:
+
+```text
+Delegate this task to a subagent:
+inspect the current directory and summarize the visible project structure in 3 bullet points.
+```
+
+Two thresholds were tested with the same type of delegated task.
+
+#### With `minDuration: 60`
+
+Observed result: **no toast**.
+
+Both the subagent and the main session completed below the 60-second threshold, so both completion notifications were suppressed.
+
+#### With `minDuration: 10`
+
+In the observed run:
+
+- the subagent completed in approximately **6 seconds**;
+- the main OpenCode session completed in approximately **19.1 seconds**.
+
+Observed result: **exactly one toast**, `Task completed`.
+
+Interpretation:
+
+```text
+subagent ~6 s < 10 s
+  -> subagent_complete suppressed
+
+main session ~19.1 s > 10 s
+  -> complete toast emitted
+```
+
+This confirms that `minDuration` is evaluated independently for the subagent session and the main session. A delegated task can therefore produce zero, one, or two completion toasts depending on the duration of each session.
+
 ### Baseline decision
 
 Use:
@@ -273,4 +311,4 @@ Use:
 
 as the repository's recommended daily-use threshold.
 
-The main `complete` threshold is now validated. A dedicated short/long `subagent_complete` duration test may still be run if strict subagent-specific evidence is desired, although the plugin applies the same top-level threshold to completion events.
+The threshold is now validated for both `complete` and `subagent_complete`, while high-value attention events such as `permission` remain immediate.
