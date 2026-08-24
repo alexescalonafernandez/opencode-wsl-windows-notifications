@@ -77,7 +77,7 @@ The setup deliberately uses `-ExecutionPolicy Bypass` only for the PowerShell pr
 | `error` | 🟡 Configured | Not intentionally forced during validation |
 | `plan_exit` | 🟡 Configured | Specific OpenCode tool event; not intentionally forced |
 | `suppressWhenFocused` | ❌ Not effective in tested WSL + Windows Terminal setup | Plugin runs as Linux inside WSL and cannot reliably identify the host Windows Terminal focus state |
-| `minDuration = 10` | ✅ Validated for main completion | A ~2 s task produced no completion toast; a >10 s task produced a completion toast, while `permission` still notified immediately |
+| `minDuration = 10` | ✅ Validated for main and subagent sessions | Short sessions are filtered independently; longer sessions still notify, while `permission` remains immediate |
 
 ## Recommended WSL defaults
 
@@ -88,7 +88,9 @@ The repository configuration currently uses:
 "minDuration": 10
 ```
 
-`minDuration: 10` reduces noise from trivial completion events while preserving attention events such as permission requests. The threshold behavior has been validated for the main `complete` event. A subagent-specific duration test can be used if stricter evidence is required for `subagent_complete`.
+`minDuration: 10` reduces noise from trivial completion events while preserving attention events such as permission requests. It was validated for both main-session `complete` events and `subagent_complete` events.
+
+A delegated-task test demonstrated that the threshold is evaluated per session: a ~6-second subagent was suppressed while the ~19.1-second parent session still generated `Task completed`. With `minDuration: 60`, both were suppressed.
 
 ## Focus suppression note
 
