@@ -66,9 +66,9 @@ Validated on 2026-08-25 with:
 
 The setup deliberately uses `-ExecutionPolicy Bypass` only for the PowerShell process launched for a notification. It does **not** require changing the persistent machine or user execution policy.
 
-## Event status
+## Event and behavior status
 
-| Event | Status | Notes |
+| Event / behavior | Status | Notes |
 | --- | --- | --- |
 | `complete` | ✅ Validated | Main session completion produced one toast |
 | `permission` | ✅ Validated | Toast appeared while OpenCode was waiting for approval |
@@ -76,8 +76,26 @@ The setup deliberately uses `-ExecutionPolicy Bypass` only for the PowerShell pr
 | `subagent_complete` | ✅ Validated | Subagent and main-session completion were correctly distinguished |
 | `error` | 🟡 Configured | Not intentionally forced during validation |
 | `plan_exit` | 🟡 Configured | Specific OpenCode tool event; not intentionally forced |
+| `suppressWhenFocused` | ❌ Not effective in tested WSL + Windows Terminal setup | Plugin runs as Linux inside WSL and cannot reliably identify the host Windows Terminal focus state |
+| `minDuration` | ⬜ Pending tuning | Next anti-noise control to validate |
 
-Focus suppression and minimum-duration tuning are intentionally documented separately because they should be validated on each terminal/Windows setup before being treated as final daily-use defaults.
+## Focus suppression note
+
+The repository intentionally keeps:
+
+```json
+"suppressWhenFocused": false
+```
+
+for the WSL baseline.
+
+A controlled test with `suppressWhenFocused: true` still produced a toast while the OpenCode tab was focused in Windows Terminal.
+
+The reason is architectural: OpenCode and the notifier plugin run as Linux processes inside WSL, so the plugin follows its Linux focus-detection path. The native Windows `GetForegroundWindow()` path is not selected. A normal WSL shell hosted by Windows Terminal does not expose a Linux X11/Wayland window ID for the host terminal window, and the plugin deliberately fails open by continuing to notify when focus cannot be established.
+
+See [`docs/validation.md`](docs/validation.md) and [`docs/troubleshooting.md`](docs/troubleshooting.md) for the observed behavior and upstream references.
+
+A future enhancement could move focus filtering into the Windows-side PowerShell bridge, but a naive implementation would treat the whole Windows Terminal window as focused and could not reliably distinguish the OpenCode tab from another tab. This is therefore not enabled by default.
 
 ## Repository layout
 
