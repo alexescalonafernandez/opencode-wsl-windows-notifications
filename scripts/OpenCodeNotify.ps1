@@ -25,7 +25,7 @@ $eventLabel = switch ($EventName) {
     "subagent_complete" { "Subagent completed" }
     "error"             { "Error" }
     "plan_exit"         { "Plan ready for review" }
-    default             { $EventName }
+    default              { $EventName }
 }
 
 if ($EventName -eq "subagent_complete" -and -not [string]::IsNullOrWhiteSpace($AgentName)) {
@@ -36,7 +36,7 @@ if ($EventName -eq "subagent_complete" -and -not [string]::IsNullOrWhiteSpace($A
         $detail = "$AgentName - $SessionTitle"
     }
 }
-elif ($EventName -eq "complete") {
+elseif ($EventName -eq "complete") {
     if (-not [string]::IsNullOrWhiteSpace($SessionTitle)) {
         $detail = $SessionTitle
     }
